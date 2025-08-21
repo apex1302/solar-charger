@@ -12,7 +12,7 @@ Works with Tasmota smart plugs and MQTT
 
 Minimal setup using a simple INI configuration
 
-Deutsch
+
 **einfaches Überschussladen für E-Autos mit Solarstrom**
 
 Dieses Projekt ermöglicht es, überschüssigen Strom eines kleinen Balkonkraftwerks zum Laden eines Elektroautos zu nutzen. Es verwendet Tasmota NOUS A1T Steckdosen, gesteuert über MQTT (Mosquitto) auf einem Raspberry Pi. Der Ladeprozess wird aktiviert, wenn die Solarproduktion einen konfigurierbaren Schwellenwert überschreitet, und abgeschaltet, wenn die Leistung unter einen definierten Hysterese-Wert fällt, um häufiges Ein- und Ausschalten zu verhindern. Der minimale Ladestrom des Ladeziegels kann eingestellt werden (z. B. 6 A), damit die meisten E-Autos das Laden starten. Aktuell wird nur die Solarproduktion berücksichtigt; ein Abgleich mit dem tatsächlichen Hausverbrauch könnte in Zukunft ergänzt werden.
@@ -29,7 +29,8 @@ Einfache Einrichtung über eine INI-Datei
 
 
 **Configuration**
-Edit the config.ini for your needs:
+
+please edit the config.ini for your needs:
 
 [settings]
 limit = 200         ; watts threshold to turn charger ON
