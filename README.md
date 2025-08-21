@@ -10,7 +10,7 @@ Configurable thresholds, hysteresis, and cycle time
 
 Works with Tasmota smart plugs and MQTT
 
-Minimal setup using a simple INI configuration
+Minimal setup using a simple INI configuration please edit for your own needs
 
 
 **einfaches Überschussladen für E-Autos mit Solarstrom**
@@ -25,29 +25,6 @@ Konfigurierbare Schwellenwerte, Hysterese und Zykluszeit
 
 Kompatibel mit Tasmota Steckdosen und MQTT
 
-Einfache Einrichtung über eine INI-Datei
+Einfache Einrichtung über eine INI-Datei, bitte für den eigenen Gebrauch anpassen
 
 
-**Configuration**
-
-please edit the config.ini for your needs:
-
-[settings]
-limit = 200         ; watts threshold to turn charger ON
-hysteresis = 20     ; watts to wait before turning charger OFF
-cycle = 60          ; seconds to wait between switching events
-solar_topic = SOLAR ; MQTT topic for solar plug
-charger_topic = CHARGER ; MQTT topic for charger plug
-mqtt_host = 192.168.1.188
-mqtt_port = 1883
-
-limit: Minimum solar power to start charging
-hysteresis: Prevents immediate shutdown on small drops
-cycle: Minimum seconds between switching on/off
-solar_topic: MQTT topic of your solar measuring plug
-charger_topic: MQTT topic of your EV charger plug
-mqtt_host & mqtt_port: Your MQTT broker settings
-
-**Usage**
-bash
-python3 solar_charger.py
