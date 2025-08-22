@@ -22,32 +22,40 @@ CYCLE = int(config["settings"]["cycle"])
 # State
 last_action_time = 0
 charger_state = None
+charger_power = None
 solar_state = None
+solar_power = None
 
 # CSV vorbereiten (Header nur wenn Datei neu)
 if not os.path.exists(CSV_FILE):
     with open(CSV_FILE, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["timestamp", "power_w", "charger_state", "solar_state"])
+        writer.writerow(["timestamp", "solar_power_w", "charger_power_w", "charger_state", "solar_state"])
 
-def log_to_csv(power, charger_state, solar_state):
+def log_to_csv(solar_power, charger_power, charger_state, solar_state):
     with open(CSV_FILE, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), power, charger_state, solar_state])
+        writer.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), solar_power, charger_power, charger_state, solar_state])
+
+def print_status():
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{ts}] ☀️ Solar: {solar_power} W ({solar_state}) | 🚗 Charger: {charger_power} W ({charger_state})")
 
 def on_connect(client, userdata, flags, rc):
     print("✅ Connected to MQTT broker")
     client.subscribe(SOLAR_TOPIC)
     client.subscribe("stat/CHARGER/POWER")
     client.subscribe("stat/SOLAR/POWER")
+    client.subscribe("tele/CHARGER/SENSOR")  # Charger-Leistung empfangen
 
-    # Initiale Abfragen (damit direkt Status + Messwerte reinkommen)
-    client.publish("cmnd/SOLAR/STATUS", "10")     # Messwerte anfordern
-    client.publish("cmnd/CHARGER/POWER", "")      # Charger-Status abfragen
-    client.publish("cmnd/SOLAR/POWER", "")        # Solar-Status abfragen
+    # Initiale Abfragen
+    client.publish("cmnd/SOLAR/STATUS", "10")
+    client.publish("cmnd/CHARGER/STATUS", "10")
+    client.publish("cmnd/CHARGER/POWER", "")
+    client.publish("cmnd/SOLAR/POWER", "")
 
 def on_message(client, userdata, msg):
-    global charger_state, solar_state, last_action_time
+    global charger_state, solar_state, charger_power, solar_power, last_action_time
 
     topic = msg.topic
     now = time.time()
@@ -56,31 +64,28 @@ def on_message(client, userdata, msg):
         # --- Solar Leistung (tele/.../SENSOR) ---
         if topic == SOLAR_TOPIC:
             payload = json.loads(msg.payload.decode())
-            power = payload["ENERGY"]["Power"]
-            print(f"⚡ Solar power: {power} W")
+            solar_power = payload["ENERGY"]["Power"]
 
             if now - last_action_time >= CYCLE:
-                # Charger steuern
-                if power >= LIMIT:
+                if solar_power >= LIMIT:
                     client.publish(CHARGER_TOPIC, "ON")
                     charger_state = "ON"
                     print("➡️ Turning CHARGER ON")
                     last_action_time = now
-                elif power <= (LIMIT - HYST):
+                elif solar_power <= (LIMIT - HYST):
                     client.publish(CHARGER_TOPIC, "OFF")
                     charger_state = "OFF"
                     print("➡️ Turning CHARGER OFF")
                     last_action_time = now
 
-                # Solar wieder einschalten falls OFF
                 if solar_state == "OFF":
                     client.publish("cmnd/SOLAR/POWER", "ON")
                     solar_state = "ON"
                     print("➡️ Forcing SOLAR back ON")
                     last_action_time = now
 
-            # Log in CSV
-            log_to_csv(power, charger_state, solar_state)
+            log_to_csv(solar_power, charger_power, charger_state, solar_state)
+            print_status()
 
         # --- Charger Status ---
         elif topic == "stat/CHARGER/POWER":
@@ -91,6 +96,12 @@ def on_message(client, userdata, msg):
         elif topic == "stat/SOLAR/POWER":
             solar_state = msg.payload.decode()
             print(f"☀️ Solar state: {solar_state}")
+
+        # --- Charger Power (tele/CHARGER/SENSOR) ---
+        elif topic == "tele/CHARGER/SENSOR":
+            payload = json.loads(msg.payload.decode())
+            charger_power = payload["ENERGY"]["Power"]
+            print_status()
 
     except Exception as e:
         print("❌ Error processing message:", e)
